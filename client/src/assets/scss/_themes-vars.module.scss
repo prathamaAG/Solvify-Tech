@@ -1,0 +1,115 @@
+// ==============================|| SOLVIFY MODERN THEME ||============================== //
+
+// Primary - Indigo
+$primary: #6366F1;
+$primary100: #818CF8;
+$primaryDark: #4F46E5;
+$primaryLight: #A5B4FC;
+
+// Secondary - Violet
+$secondary: #8B5CF6;
+$secondaryDark: #7C3AED;
+$secondaryLight: #C4B5FD;
+
+// Error
+$error: #EF4444;
+$errorDark: #DC2626;
+$errorLight: #FCA5A5;
+
+// Warning
+$warning: #F59E0B;
+$warningDark: #D97706;
+$warningLight: #FCD34D;
+
+// Info
+$info: #06B6D4;
+$infoDark: #0891B2;
+$infoLight: #67E8F9;
+
+// Success
+$success: #10B981;
+$successDark: #059669;
+$successLight: #6EE7B7;
+
+// Grey
+$grey300: #64748B;
+$grey400: #94A3B8;
+$dark: #1E293B;
+
+$bg100: #F8FAFC;
+
+// Text Colors (Light Mode)
+$textPrimary: #1E293B;
+$textSecondary: #334155;
+$textDark: #0F172A;
+$textHint: #94A3B8;
+
+// Text Colors (Dark - for sidebar)
+$textDarkPrimary: #E2E8F0;
+$textDarkSecondary: #CBD5E1;
+$textDarkDark: #F8FAFC;
+$texDarkHint: #475569;
+
+// Background
+$background: #F1F5F9;
+$backgoundDark: #0F172A;
+
+// Paper
+$paper: #FFFFFF;
+$paperDark: #1E293B;
+
+// Sidebar
+$sidebarBg: #1E1B4B;
+
+$menuHover: #EEF2FF;
+
+// Export for JS
+:export {
+  primary: $primary;
+  primaryDark: $primaryDark;
+  primaryLight: $primaryLight;
+  primary100: $primary100;
+
+  secondary: $secondary;
+  secondaryDark: $secondaryDark;
+  secondaryLight: $secondaryLight;
+
+  error: $error;
+  errorDark: $errorDark;
+  errorLight: $errorLight;
+
+  warning: $warning;
+  warningDark: $warningDark;
+  warningLight: $warningLight;
+
+  info: $info;
+  infoDark: $infoDark;
+  infoLight: $infoLight;
+
+  success: $success;
+  successDark: $successDark;
+  successLight: $successLight;
+
+  grey300: $grey300;
+  grey400: $grey400;
+
+  bg100: $bg100;
+
+  textPrimary: $textPrimary;
+  textSecondary: $textSecondary;
+  textDark: $textDark;
+  textHint: $textHint;
+
+  textDarkPrimary: $textDarkPrimary;
+  textDarkSecondary: $textDarkSecondary;
+  textDarkDark: $textDarkDark;
+  textDarkHint: $texDarkHint;
+
+  background: $background;
+  backgoundDark: $backgoundDark;
+
+  paper: $paper;
+  paperDark: $paperDark;
+  sidebarBg: $sidebarBg;
+  menuHover: $menuHover;
+}
