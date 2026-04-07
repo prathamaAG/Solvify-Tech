@@ -3,7 +3,7 @@ import { apiService, commonService } from "../services";
 
 const HEARTBEAT_INTERVAL_MS = 30000; // Send heartbeat every 30s
 const THROTTLE_MS = 2000;            // Throttle activity events to every 2s
-const INACTIVITY_THRESHOLD_MS = 60000; // 60s of no input = inactive
+const INACTIVITY_THRESHOLD_MS = 30000; // 30s of no input = inactive (detected on 2nd heartbeat ~60s)
 
 const useActivityTracker = (activeTracking) => {
   const lastActivityTimeRef = useRef(Date.now());
