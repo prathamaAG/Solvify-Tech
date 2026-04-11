@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const ManualTimeRequestController = require("../controllers/manualTimeRequest.controller.js");
+const ManualTimeRequestController = require("../Controllers/manualTimeRequest.controller.js");
 const {
    verifyAdmin
 } = require("../Middleware/auth.middleware");

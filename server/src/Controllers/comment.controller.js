@@ -1,7 +1,7 @@
 const { Comment, CommentFile, User, Task, Card, Project, ProjectMembers } = require('../Database/config');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
-const { uploadToCloudinary } = require('../services/fileUpload');
+const { uploadToCloudinary } = require('../Services/fileUpload');
 
 // Helper function to verify user access to a task
 const verifyTaskAccess = async (user, task_id) => {
