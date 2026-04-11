@@ -33,6 +33,9 @@ const meetingRoutes = require("./Routes/meeting.routes");
 const activityRoutes = require("./Routes/activity.routes");
 const aiRoutes = require("./Routes/ai.routes");
 
+// Health check endpoint
+app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+
 // Use routes
 app.use("/api/users", userRoutes);
 app.use("/api/project", projectRoutes);

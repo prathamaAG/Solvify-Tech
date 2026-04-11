@@ -17,11 +17,15 @@ const uploadToCloudinary = async (filePath, folder = 'task_comments') => {
             throw new Error('File does not exist at path: ' + filePath);
         }
 
-        // Upload with error handling
+        // Upload as 'raw' resource type to bypass Strict Transformations
+        // (Cloudinary blocks direct access to 'image' type with strict mode enabled)
         const result = await cloudinary.uploader.upload(filePath, {
             folder,
+            resource_type: 'raw',
+            type: 'upload',
+            access_mode: 'public',
             use_filename: true,
-            unique_filename: false,
+            unique_filename: true,
             overwrite: false
         });
 
@@ -35,7 +39,8 @@ const uploadToCloudinary = async (filePath, folder = 'task_comments') => {
         return {
             url: result.secure_url,
             public_id: result.public_id,
-            format: result.format
+            format: result.format,
+            resource_type: result.resource_type
         };
     } catch (error) {
         // Ensure temp file is cleaned up
@@ -47,4 +52,14 @@ const uploadToCloudinary = async (filePath, folder = 'task_comments') => {
     }
 };
 
-module.exports = { uploadToCloudinary };
+// Generate a signed URL for accessing files (fallback if public access doesn't work)
+const getSignedUrl = (publicId, resourceType = 'image') => {
+    return cloudinary.url(publicId, {
+        sign_url: true,
+        resource_type: resourceType,
+        type: 'upload',
+        secure: true
+    });
+};
+
+module.exports = { uploadToCloudinary, getSignedUrl };

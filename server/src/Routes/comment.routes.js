@@ -15,6 +15,9 @@ router.post(
 // Get all comments for a task
 router.get('/task/:task_id', authenticateUser, commentController.getTaskComments);
 
+// Proxy file download (bypasses Cloudinary Strict Transformations)
+router.get('/file/:id', authenticateUser, commentController.proxyFileDownload);
+
 // Update comment (with optional file upload)
 router.put(
     '/update',
@@ -26,4 +29,4 @@ router.put(
 // Delete comment
 router.delete('/', authenticateUser, commentController.deleteComment);
 
-module.exports = router;
+module.exports = router;

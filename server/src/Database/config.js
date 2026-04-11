@@ -15,6 +15,12 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 3306,
     logging: false,
     pool: { max: 5, min: 0 },
+    dialectOptions: process.env.NODE_ENV === "production" ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {}
   }
 );
 
@@ -65,6 +71,10 @@ Task.belongsTo(User, { as: 'Assigner', foreignKey: 'assign_by' });
 Comment.belongsTo(User, { foreignKey: 'sender', as: 'commentSender', onDelete: 'CASCADE' });
 User.hasMany(Comment, { foreignKey: 'sender', as: 'comments', onDelete: 'CASCADE' });
 
+// Comments ↔ Tasks
+Task.hasMany(Comment, { foreignKey: 'task_id', as: 'comments', onDelete: 'CASCADE' });
+Comment.belongsTo(Task, { foreignKey: 'task_id', as: 'task', onDelete: 'CASCADE' });
+
 // Comment Files
 Comment.hasMany(CommentFile, { foreignKey: 'comment_id', as: 'files', onDelete: 'CASCADE' });
 CommentFile.belongsTo(Comment, { foreignKey: 'comment_id', as: 'comment', onDelete: 'CASCADE' });
@@ -101,7 +111,7 @@ TaskTimeTracking.hasMany(ActivityLog, { foreignKey: 'tracking_id', as: 'activity
 // ========================
 
 sequelize
-  .sync({ alter: true }) // 👈 creates or updates tables automatically
+  .sync() // 👈 Safe mode: Only creates tables if they don't exist. Prevents the 64-key limit bug!
   .then(() => console.log("✅ Database tables created/updated successfully."))
   .catch(err => console.error("❌ Error syncing database:", err));
 

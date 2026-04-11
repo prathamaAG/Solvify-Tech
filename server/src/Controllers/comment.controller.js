@@ -60,19 +60,26 @@ exports.createComment = async (req, res) => {
         });
 
         // Process file uploads
+        console.log('📁 Files received by multer:', files.length);
+        files.forEach((f, i) => console.log(`  File ${i}: name=${f.originalname}, mime=${f.mimetype}, size=${f.size}, path=${f.path}`));
+        
         const uploadedFiles = [];
         for (const file of files) {
             try {
+                console.log(`⬆️ Uploading to Cloudinary: ${file.originalname}...`);
                 const result = await uploadToCloudinary(file.path);
+                console.log(`✅ Cloudinary result:`, JSON.stringify(result));
                 const fileRecord = await CommentFile.create({
                     comment_id: comment.comment_id,
                     name: file.originalname,
                     url: result.url,
                     type: file.mimetype
                 });
+                console.log(`✅ CommentFile saved: id=${fileRecord.id}`);
                 uploadedFiles.push(fileRecord);
             } catch (fileError) {
-                console.error(`Error uploading file ${file.originalname}:`, fileError);
+                console.error(`❌ Error uploading file ${file.originalname}:`, fileError.message);
+                console.error(fileError);
             }
         }
 
@@ -196,7 +203,7 @@ exports.updateComment = async (req, res) => {
                 return CommentFile.create({
                     comment_id,
                     name: file.originalname,
-                    url: result.secure_url,
+                    url: result.url,
                     type: file.mimetype
                 });
             })
@@ -275,6 +282,58 @@ exports.deleteComment = async (req, res) => {
         await Comment.destroy({ where: { comment_id } });
 
         res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+
+// Proxy file download - streams file from Cloudinary through the server
+// This bypasses Cloudinary's Strict Transformations which block direct URL access
+exports.proxyFileDownload = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const fileRecord = await CommentFile.findByPk(id);
+        if (!fileRecord) {
+            return res.status(404).json({ message: "File not found" });
+        }
+
+        // Fetch the file from Cloudinary via server (authenticated)
+        const https = require('https');
+        const url = new URL(fileRecord.url);
+
+        // Set response headers for download
+        const mimeType = fileRecord.type || 'application/octet-stream';
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${fileRecord.name}"`);
+
+        // Pipe the Cloudinary response to the client
+        https.get(fileRecord.url, { headers: { 'User-Agent': 'Solvify-Server/1.0' } }, (cloudinaryRes) => {
+            if (cloudinaryRes.statusCode !== 200) {
+                // If Cloudinary returns non-200, try with API key auth
+                const cloudinary = require('cloudinary').v2;
+                const signedUrl = cloudinary.url(
+                    fileRecord.url.split('/upload/')[1]?.replace(/^v\d+\//, '') || '',
+                    { sign_url: true, resource_type: 'image', secure: true, type: 'upload' }
+                );
+
+                https.get(signedUrl, (signedRes) => {
+                    if (signedRes.statusCode !== 200) {
+                        return res.status(502).json({ message: "Unable to fetch file from storage" });
+                    }
+                    signedRes.pipe(res);
+                }).on('error', (err) => {
+                    console.error("Signed URL fetch error:", err);
+                    res.status(502).json({ message: "Error fetching file" });
+                });
+            } else {
+                cloudinaryRes.pipe(res);
+            }
+        }).on('error', (err) => {
+            console.error("Cloudinary proxy error:", err);
+            res.status(502).json({ message: "Error fetching file from storage" });
+        });
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ message: "Server error", error });
