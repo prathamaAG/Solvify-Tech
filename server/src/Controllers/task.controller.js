@@ -442,14 +442,14 @@ exports.getTaskDetails = async (req, res) => {
                     as: 'Assignee',
                     attributes: ['user_id', 'name', 'email'],
                     required: false,
-                    where: { user_id: Sequelize.col('task.assign_to') }
+                    where: { user_id: Sequelize.col('Task.assign_to') }
                 },
                 {
                     model: User,
                     as: 'Assigner',
                     attributes: ['user_id', 'name', 'email'],
                     required: false,
-                    where: { user_id: Sequelize.col('task.assign_by') }
+                    where: { user_id: Sequelize.col('Task.assign_by') }
                 }
             ],
         });

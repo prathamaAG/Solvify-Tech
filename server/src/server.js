@@ -13,7 +13,8 @@ app.use(cors({
   origin: [
     process.env.CLIENT_URL, 
     'http://localhost:5173', 
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://solvify-tech-nine.vercel.app'
   ].filter(Boolean), 
   methods: 'GET,POST,PUT,DELETE',
   credentials: true 
