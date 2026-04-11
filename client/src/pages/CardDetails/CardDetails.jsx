@@ -606,71 +606,7 @@ const CardDetails = () => {
                   />
                </Box>
 
-               {/* Document Upload Section */}
-               <Box>
-                  <Typography sx={{ fontWeight: 500, mb: 1 }}>Documents</Typography>
-                  <Button
-                     component="label"
-                     variant="contained"
-                     startIcon={<CloudUploadIcon />}
-                     disabled={updating}
-                  >
-                     Upload File
-                     <input type="file" hidden multiple onChange={handleFileChange} />
-                  </Button>
 
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 2 }}>
-                     {files.map((file, index) => (
-                        <Box
-                           key={index}
-                           sx={{
-                              position: "relative",
-                              width: 100,
-                              height: 100,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              border: "1px solid #ddd",
-                              borderRadius: 2,
-                              overflow: "hidden",
-                              backgroundColor: "#f9f9f9",
-                              "&:hover .delete-btn": { display: "flex" },
-                           }}
-                        >
-                           {file.type.startsWith("image/") ? (
-                              <img
-                                 src={URL.createObjectURL(file)}
-                                 alt="Preview"
-                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                              />
-                           ) : (
-                              <Box sx={{ textAlign: "center" }}>
-                                 {getFileIcon(file.type)}
-                                 <Typography sx={{ fontSize: 12, mt: 1 }}>{file.name.split(".").pop()}</Typography>
-                              </Box>
-                           )}
-
-                           <IconButton
-                              className="delete-btn"
-                              onClick={() => handleRemoveFile(index)}
-                              sx={{
-                                 position: "absolute",
-                                 top: 2,
-                                 right: 2,
-                                 display: "none",
-                                 backgroundColor: "rgba(0,0,0,0.6)",
-                                 color: "white",
-                                 "&:hover": { backgroundColor: "black" },
-                              }}
-                              size="small"
-                              disabled={updating}
-                           >
-                              <DeleteIcon fontSize="small" />
-                           </IconButton>
-                        </Box>
-                     ))}
-                  </Box>
-               </Box>
             </Box>
 
             {/* Right Section - Comments */}
