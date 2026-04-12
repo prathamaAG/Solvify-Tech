@@ -2,7 +2,9 @@ const nodemailer = require("nodemailer");
 
 const sendVerificationEmail = async (email, name, verificationToken) => {
    const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
          user: process.env.EMAIL_USER,
          pass: process.env.EMAIL_PASS,
@@ -24,7 +26,9 @@ const sendVerificationEmail = async (email, name, verificationToken) => {
 
 const sendPasswordResetEmail = async (email, name, resetLink) => {
    const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
          user: process.env.EMAIL_USER,
          pass: process.env.EMAIL_PASS,
@@ -46,7 +50,9 @@ const sendPasswordResetEmail = async (email, name, resetLink) => {
 
 const sendWelcomeEmail = async (to, name, username, password) => {
    const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
          user: process.env.EMAIL_USER,
          pass: process.env.EMAIL_PASS,
@@ -85,7 +91,9 @@ const sendWelcomeEmail = async (to, name, username, password) => {
 
 const sendDueDateReminderEmail = async (email, name, taskTitle, projectName, dueDate) => {
    const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
          user: process.env.EMAIL_USER,
          pass: process.env.EMAIL_PASS,
