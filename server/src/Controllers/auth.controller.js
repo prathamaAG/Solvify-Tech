@@ -60,8 +60,12 @@ exports.signup = async (req, res) => {
          reporting_person_id: reportingPersonId,
       });
 
-      // Send verification email
-      await emailService.sendVerificationEmail(email, name, verificationToken);
+      // Send verification email safely
+      try {
+         await emailService.sendVerificationEmail(email, name, verificationToken);
+      } catch (emailErr) {
+         console.warn("Could not send verification email (likely SMTP block), but user was created:", emailErr.message);
+      }
 
       res.status(201).json({
          message: "User registered. Please verify your email.",
