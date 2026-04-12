@@ -138,25 +138,23 @@ exports.login = async (req, res) => {
          return res.status(400).json({ message: "Invalid credentials" });
       }
 
-      if (!user.verified) {
+      // BYPASS DEMO: Let unverified users login instantly without confirming email
+      /* if (!user.verified) {
          const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, {
             expiresIn: "1h",
          });
-
          user.verificationToken = verificationToken;
          await user.save();
-
          await emailService.sendVerificationEmail(
             email,
             user.name,
             verificationToken
          );
-
          return res.status(401).json({
             message:
                "Please verify your email first. Verification email sent again.",
          });
-      }
+      } */
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {

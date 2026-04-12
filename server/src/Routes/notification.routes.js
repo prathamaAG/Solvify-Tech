@@ -9,10 +9,10 @@ router.get("/", authenticateUser, notificationController.getUserNotifications);
 // Get unread count
 router.get("/unread-count", authenticateUser, notificationController.getUnreadCount);
 
-// Mark single notification as read
-router.put("/read/:id", authenticateUser, notificationController.markAsRead);
-
 // Mark all notifications as read
 router.put("/read-all", authenticateUser, notificationController.markAllAsRead);
+
+// Mark single notification as read
+router.put("/read/:id", authenticateUser, notificationController.markAsRead);
 
 module.exports = router;
