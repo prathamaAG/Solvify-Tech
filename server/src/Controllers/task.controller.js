@@ -135,19 +135,21 @@ exports.updateTask = async (req, res) => {
             return res.status(404).json({ message: "Card not found" });
         }
 
+        // Check if user is at least a project member
+        const projectMember = await ProjectMembers.findOne({
+            where: {
+                [Op.and]: [{ user_id: currentUser.user_id }, { project_id: card.project_id }]
+            }
+        });
+
+        if (!projectMember && currentUser.role !== "admin") {
+            return res.status(403).json({ status: 0, message: "Access denied. You are not a member of this project." });
+        }
+
         // Hierarchy-based permission check
         const permission = await getTaskPermission(currentUser, task);
 
         if (permission === "denied") {
-            // Check if user is at least a project member
-            const projectMember = await ProjectMembers.findOne({
-                where: {
-                    [Op.and]: [{ user_id: currentUser.user_id }, { project_id: card.project_id }]
-                }
-            });
-            if (!projectMember) {
-                return res.status(403).json({ status: 0, message: "Access denied" });
-            }
             return res.status(403).json({ status: 0, message: "You don't have permission to update this task" });
         }
 
