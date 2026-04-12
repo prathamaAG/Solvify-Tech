@@ -93,13 +93,11 @@ exports.getProjects = async (req, res) => {
             }
         } else {
             const data = await Project.findAndCountAll({
-                where: {
-                    project_id: {
-                        [Op.in]: sequelize.literal(
-                            `(SELECT project_id FROM project_members WHERE user_id = ${user_id})`
-                        )
-                    }
-                },
+                include: [{
+                    model: User,
+                    where: { user_id: user.user_id },
+                    through: { attributes: [] }
+                }],
                 limit,
                 offset
             });
@@ -327,22 +325,20 @@ exports.getProjectMembers = async (req, res) => {
             return res.status(400).json({ message: "Project ID is required" });
         }
 
-        const members = await User.findAll({
-            where: {
-                user_id: {
-                    [Op.in]: sequelize.literal(
-                        `(SELECT user_id FROM project_members WHERE project_id = ${project_id})`
-                    )
-                }
-            },
-            attributes: ["user_id", "name", "email", "role"]
+        // Use standard Sequelize ORM to bypass raw SQL table-casing bugs on DigitalOcean
+        const project = await Project.findByPk(project_id, {
+            include: [{
+                model: User,
+                attributes: ["user_id", "name", "email", "role"],
+                through: { attributes: [] } // Exclude junction table data
+            }]
         });
 
-        if (!members.length) {
+        if (!project || !project.Users || project.Users.length === 0) {
             return res.status(404).json({ message: "No members found for this project" });
         }
 
-        res.status(200).json({ data: members });
+        res.status(200).json({ data: project.Users });
     } catch (error) {
         console.error("Error fetching project members:", error);
         res.status(500).json({ message: "Server error", error: error.message });

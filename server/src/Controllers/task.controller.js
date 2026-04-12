@@ -167,6 +167,17 @@ exports.updateTask = async (req, res) => {
             }
         }
 
+        // 'unassigned' tasks can be claimed by any project member, or assigned to their subordinates
+        if (permission === "unassigned" && assign_to_email) {
+            const assigneeUser = await User.findOne({ where: { email: assign_to_email } });
+            if (assigneeUser) {
+                const canAssignTo = await isSuperiorOf(currentUser.user_id, assigneeUser.user_id);
+                if (!canAssignTo && assigneeUser.user_id !== currentUser.user_id) {
+                    return res.status(403).json({ status: 0, message: "Unassigned tasks can only be claimed by yourself or assigned to your subordinates" });
+                }
+            }
+        }
+
         // Prepare update data
         const updateData = {
             title,

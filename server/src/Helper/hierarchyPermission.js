@@ -48,6 +48,7 @@ async function isSuperiorOf(managerId, targetUserId) {
  */
 async function getTaskPermission(user, task) {
     if (user.role === "admin") return "admin";
+    if (!task.assign_to) return "unassigned"; // New state for newly created tasks
     if (task.assign_to === user.user_id) return "self";
     if (task.assign_to && await isSuperiorOf(user.user_id, task.assign_to)) return "superior";
     return "denied";
