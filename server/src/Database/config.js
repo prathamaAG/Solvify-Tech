@@ -105,6 +105,7 @@ ActivityLog.belongsTo(TaskTimeTracking, { foreignKey: 'tracking_id', as: 'tracki
 ActivityLog.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(Task, { foreignKey: 'task_id', as: 'task', onDelete: 'CASCADE' });
 TaskTimeTracking.hasMany(ActivityLog, { foreignKey: 'tracking_id', as: 'activityLogs', onDelete: 'CASCADE' });
+Task.hasMany(ActivityLog, { foreignKey: 'task_id', as: 'activityLogs', onDelete: 'CASCADE' });
 
 // ========================
 // Sync Models with Database
