@@ -60,12 +60,9 @@ exports.signup = async (req, res) => {
          reporting_person_id: reportingPersonId,
       });
 
-      // Send verification email safely
-      try {
-         await emailService.sendVerificationEmail(email, name, verificationToken);
-      } catch (emailErr) {
-         console.warn("Could not send verification email (likely SMTP block), but user was created:", emailErr.message);
-      }
+      // Send verification email asynchronously to prevent UI hang
+      emailService.sendVerificationEmail(email, name, verificationToken)
+         .catch(emailErr => console.warn("Could not send verification email:", emailErr.message));
 
       res.status(201).json({
          message: "User registered. Please verify your email.",
@@ -138,23 +135,26 @@ exports.login = async (req, res) => {
          return res.status(400).json({ message: "Invalid credentials" });
       }
 
-      // BYPASS DEMO: Let unverified users login instantly without confirming email
-      /* if (!user.verified) {
+      if (!user.verified) {
          const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, {
             expiresIn: "1h",
          });
+
          user.verificationToken = verificationToken;
          await user.save();
-         await emailService.sendVerificationEmail(
+
+         // Send email asynchronously so it doesn't hang the UI if SMTP times out
+         emailService.sendVerificationEmail(
             email,
             user.name,
             verificationToken
-         );
+         ).catch(err => console.error("SMTP Login Error:", err.message));
+
          return res.status(401).json({
             message:
                "Please verify your email first. Verification email sent again.",
          });
-      } */
+      }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
