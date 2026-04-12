@@ -64,6 +64,13 @@ exports.signup = async (req, res) => {
       emailService.sendVerificationEmail(email, name, verificationToken)
          .catch(emailErr => console.warn("Could not send verification email:", emailErr.message));
 
+      // --- PRESENTATION LOG --- //
+      console.log("\n=======================================================");
+      console.log(`🔐 NEW USER SIGNUP: ${email}`);
+      console.log("➡️  VERIFICATION LINK (Click or copy-paste to Verify):");
+      console.log(`${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`);
+      console.log("=======================================================\n");
+
       res.status(201).json({
          message: "User registered. Please verify your email.",
       });
@@ -149,6 +156,13 @@ exports.login = async (req, res) => {
             user.name,
             verificationToken
          ).catch(err => console.error("SMTP Login Error:", err.message));
+
+         // --- PRESENTATION  LOG --- //
+         console.log("\n=======================================================");
+         console.log(`🔐 RESEND VERIFICATION FOR: ${email}`);
+         console.log("➡️  VERIFICATION LINK (Click or copy-paste to Verify):");
+         console.log(`${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`);
+         console.log("=======================================================\n");
 
          return res.status(401).json({
             message:
