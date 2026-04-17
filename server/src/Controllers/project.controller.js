@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { getPaginationMetadata, getPaginatedResponse } = require("../Helper/Pagination");
-const { Project, User, ProjectMembers, sequelize, Card } = require("../Database/config");
+const { Project, User, ProjectMembers, sequelize, Card, Task, Comment, CommentFile, Meeting, TaskTimeTracking, ManualTimeRequest, ActivityLog } = require("../Database/config");
 const { Op, Sequelize } = require("sequelize");
 
 
@@ -211,11 +211,49 @@ exports.deleteProject = async (req, res) => {
             return res.status(404).json({ message: "Project not found" });
         }
 
+        // --- Manual Cascade Delete (MySQL FK constraints are not altered by sync()) ---
+        // Step 1: Get all cards in the project
+        const cards = await Card.findAll({ where: { project_id }, attributes: ['card_id'], raw: true });
+        const cardIds = cards.map(c => c.card_id);
+
+        if (cardIds.length > 0) {
+            // Step 2: Get all tasks in those cards
+            const tasks = await Task.findAll({ where: { card_id: { [Op.in]: cardIds } }, attributes: ['task_id'], raw: true });
+            const taskIds = tasks.map(t => t.task_id);
+
+            if (taskIds.length > 0) {
+                // Step 3: Delete all comments and their files linked to those tasks
+                const comments = await Comment.findAll({ where: { task_id: { [Op.in]: taskIds } }, attributes: ['comment_id'], raw: true });
+                const commentIds = comments.map(c => c.comment_id);
+                if (commentIds.length > 0) {
+                    await CommentFile.destroy({ where: { comment_id: { [Op.in]: commentIds } } });
+                    await Comment.destroy({ where: { comment_id: { [Op.in]: commentIds } } });
+                }
+
+                // Step 4: Delete time tracking, activity logs, and manual requests for those tasks
+                await ActivityLog.destroy({ where: { task_id: { [Op.in]: taskIds } } });
+                await TaskTimeTracking.destroy({ where: { task_id: { [Op.in]: taskIds } } });
+                await ManualTimeRequest.destroy({ where: { task_id: { [Op.in]: taskIds } } });
+
+                // Step 5: Delete all tasks
+                await Task.destroy({ where: { task_id: { [Op.in]: taskIds } } });
+            }
+
+            // Step 6: Delete all cards
+            await Card.destroy({ where: { card_id: { [Op.in]: cardIds } } });
+        }
+
+        // Step 7: Delete meetings and project members
+        await Meeting.destroy({ where: { project_id } });
+        await ProjectMembers.destroy({ where: { project_id } });
+
+        // Step 8: Finally delete the project
         await project.destroy();
+
         res.status(200).json({ message: "Project deleted successfully" });
     } catch (error) {
-        console.error("Error:", error); // Log the error for better insight
-        res.status(500).json({ message: "Server error", error });
+        console.error("Error deleting project:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -388,8 +426,9 @@ exports.getProjectsData = async (req, res) => {
             raw: true,
         });
 
-        // For each project, get task completion stats
         const { Task } = require("../Database/config");
+
+        // For each project, compute task completion stats
         const projectData = await Promise.all(
             projects.map(async (project) => {
                 const cards = await Card.findAll({
@@ -401,21 +440,28 @@ exports.getProjectsData = async (req, res) => {
 
                 if (cardIds.length === 0) {
                     return {
+                        project_id: project.project_id,
                         project_name: project.project_name,
                         status: project.status,
                         completion: 0,
                         total_tasks: 0,
                         completed_tasks: 0,
+                        has_active_tasks: false,
                     };
                 }
 
-                const totalTasks = await Task.count({
-                    where: { card_id: { [Op.in]: cardIds } },
-                });
-                const completedTasks = await Task.count({
+                // Task where clause: admins see all, users see only their assigned tasks
+                const taskWhere = { card_id: { [Op.in]: cardIds } };
+                if (user.role !== "admin") {
+                    taskWhere.assign_to = user.user_id;
+                }
+
+                const totalTasks = await Task.count({ where: taskWhere });
+                const completedTasks = await Task.count({ where: { ...taskWhere, status: "Completed" } });
+                const activeTasks = await Task.count({
                     where: {
-                        card_id: { [Op.in]: cardIds },
-                        status: "Completed",
+                        ...taskWhere,
+                        status: { [Op.notIn]: ["Completed"] },
                     },
                 });
 
@@ -424,21 +470,25 @@ exports.getProjectsData = async (req, res) => {
                     : 0;
 
                 return {
+                    project_id: project.project_id,
                     project_name: project.project_name,
                     status: project.status,
                     completion,
                     total_tasks: totalTasks,
                     completed_tasks: completedTasks,
+                    has_active_tasks: activeTasks > 0,
                 };
             })
         );
 
-        // Get org-wide total project count (same for everyone)
-        const totalProjectsCount = await Project.count();
+        // Total = projects this user belongs to (not org-wide)
+        const totalProjectsCount = projects.length;
+        // Active = projects where this user has at least 1 non-completed task
+        const activeProjectsCount = projectData.filter(p => p.has_active_tasks).length;
 
-        res.status(200).json({ data: projectData, totalProjectsCount });
+        res.status(200).json({ data: projectData, totalProjectsCount, activeProjectsCount });
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
-};
+};

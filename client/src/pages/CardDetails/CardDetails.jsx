@@ -209,7 +209,16 @@ const CardDetails = () => {
       }
 
       const assigneeId = cardData.assign_to?.user_id || cardData.assign_to;
-      if (assigneeId === currentUserId) {
+
+      // Allow claiming or delegating Unassigned Tasks (loose check for null/undefined/0)
+      if (!assigneeId) {
+         setCanEdit(true);
+         setCanAssign(true);
+         return;
+      }
+
+      const isSelf = String(assigneeId) === String(currentUserId);
+      if (isSelf) {
          setCanEdit(true);
          setCanAssign(false); // Self can edit but not reassign
          return;

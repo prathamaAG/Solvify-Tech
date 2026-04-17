@@ -195,8 +195,9 @@ const KanbanView = ({ columnsFromBackend, project_id }) => {
   // Check if current user can drag a task
   const canUserDragTask = (task) => {
     if (isAdmin) return true;
-    if (task?.assign_to === currentUserId) return true; // Own task
-    if (task?.assign_to && subordinateIds.includes(task.assign_to)) return true; // Subordinate's task
+    if (!task || !task.assign_to) return true; // Any project member can drag unassigned tasks
+    if (task.assign_to === currentUserId) return true; // Own task
+    if (subordinateIds.includes(task.assign_to)) return true; // Subordinate's task
     return false;
   };
 
@@ -308,6 +309,7 @@ const KanbanView = ({ columnsFromBackend, project_id }) => {
               Due_Date: newTask.due_date,
               priority: newTask.priority,
               status: "Pending",
+              assign_to: null, // Ensure unassigned state is explicit
             });
             setColumns(updatedColumns);
             break;

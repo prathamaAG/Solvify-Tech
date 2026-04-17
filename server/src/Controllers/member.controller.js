@@ -127,26 +127,32 @@ exports.adminCreateUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(userPassword, 10);
 
         // Create the user (automatically verified since admin is creating)
+        // NOTE: validate: false bypasses Sequelize's strict isEmail check so admins
+        // can create internal accounts with custom email formats (e.g. 'rajesh@123').
         const newUser = await User.create({
             name,
             email,
             mobile_no,
             password: hashedPassword,
-            role: role || 'user', // Default to 'user' if role not specified
-            verified: true, // Admin-created users are automatically verified
+            role: role || 'user',
+            verified: true,
             verificationToken: null,
-        });
+        }, { validate: false });
 
-        // Send welcome email with credentials
-        await emailService.sendWelcomeEmail(
-            email,
-            name,
-            email,
-            userPassword // Sending plaintext password (only in welcome email)
-        );
+        // Attempt to send welcome email, but don't fail the creation if email fails
+        try {
+            await emailService.sendWelcomeEmail(
+                email,
+                name,
+                email,
+                userPassword
+            );
+        } catch (emailErr) {
+            console.warn("Welcome email failed (non-critical):", emailErr.message);
+        }
 
         res.status(201).json({
-            message: "User created successfully. Welcome email sent.",
+            message: "User created successfully.",
             data: {
                 userId: newUser.user_id,
                 email: newUser.email,
@@ -155,7 +161,7 @@ exports.adminCreateUser = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in adminCreateUser:", error);
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: error.message || "Server error" });
     }
 };
 
