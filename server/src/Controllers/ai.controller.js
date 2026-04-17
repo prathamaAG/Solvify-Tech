@@ -3,14 +3,15 @@ const jwt = require("jsonwebtoken");
 const { Project, Task, User, ProjectMembers, Card, TaskTimeTracking, sequelize } = require("../Database/config");
 const { Op } = require("sequelize");
 const { getSubordinateIds } = require("../Helper/hierarchyPermission");
-
 // Use gemini-1.5-flash first — 1,500 free req/day vs ~50 for 2.5 models.
-// gemini-1.5-pro as fallback for longer/complex prompts.
+// gemini-1.5-pro as fallback. gemini-3.1 does NOT exist; 2.5 free quota is near-zero.
 const MODELS = [
-    "gemini-2.5-flash",
+    "gemini-3.1-pro",
+    "gemini-3.1-flash",
+    "gemini-3-flash",
     "gemini-2.5-pro",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite"
 ];
 
 // Simple in-memory cache: { userId: { data, timestamp } }
@@ -70,6 +71,7 @@ async function generateWithFallback(prompt) {
         throw lastError || retryError;
     }
 }
+
 
 /**
  * Gather all relevant data based on user role/hierarchy
@@ -220,7 +222,12 @@ ${data.employees.map(e => `- ${e.name} (${e.role}): ${e.completed}/${e.total_tas
 ## Overdue Tasks
 ${data.overdue_tasks.map(t => `- "${t.title}" → ${t.assignee}, due ${t.due_date}`).join("\n") || "None"}
 
-Provide: 1) Executive Summary (2-3 sentences) 2) Key Highlights 3) Risk Areas 4) Recommendations (3-5) 5) Employee Spotlight. Use markdown. Max 400 words.`;
+Please provide:
+1. A 3-sentence executive summary of project health.
+2. A bulleted list of the top 3 critical risks (e.g., specific overdue tasks or low completion rates).
+3. One actionable recommendation for the user.
+
+Keep the tone professional and concise. Use Markdown formatting.`;
 }
 
 /**
