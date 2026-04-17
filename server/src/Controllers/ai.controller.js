@@ -4,11 +4,19 @@ const { Project, Task, User, ProjectMembers, Card, TaskTimeTracking, sequelize }
 const { Op } = require("sequelize");
 const { getSubordinateIds } = require("../Helper/hierarchyPermission");
 
-// Model fallback chain — tries each model until one works
+// Use gemini-1.5-flash first — 1,500 free req/day vs ~50 for 2.5 models.
+// gemini-1.5-pro as fallback for longer/complex prompts.
 const MODELS = [
     "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
 ];
+
+// Simple in-memory cache: { userId: { data, timestamp } }
+// Prevents burning API quota on repeated button clicks during demo.
+const analyticsCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 const getGenAI = () => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -228,6 +236,21 @@ exports.getAIAnalytics = async (req, res) => {
             return res.status(404).json({ status: 0, message: "User not found" });
         }
 
+        // Check cache first — prevents repeated API calls during demo
+        const cacheKey = user.user_id;
+        const cached = analyticsCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+            return res.status(200).json({
+                status: 1,
+                message: "AI analytics generated",
+                data: {
+                    ...cached.data,
+                    cached: true,
+                    cached_at: new Date(cached.timestamp).toISOString(),
+                },
+            });
+        }
+
         // Gather data based on role
         const analyticsData = await gatherAnalyticsData(user);
 
@@ -235,17 +258,23 @@ exports.getAIAnalytics = async (req, res) => {
         const prompt = buildPrompt(analyticsData, user.role === "admin");
         const { text: aiSummary, model: usedModel } = await generateWithFallback(prompt);
 
+        const responseData = {
+            summary: aiSummary,
+            stats: analyticsData.overview,
+            projects: analyticsData.projects,
+            employees: analyticsData.employees,
+            generated_at: new Date().toISOString(),
+            model_used: usedModel,
+            cached: false,
+        };
+
+        // Store in cache
+        analyticsCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+
         res.status(200).json({
             status: 1,
             message: "AI analytics generated",
-            data: {
-                summary: aiSummary,
-                stats: analyticsData.overview,
-                projects: analyticsData.projects,
-                employees: analyticsData.employees,
-                generated_at: new Date().toISOString(),
-                model_used: usedModel,
-            },
+            data: responseData,
         });
     } catch (error) {
         console.error("AI Analytics error:", error);
