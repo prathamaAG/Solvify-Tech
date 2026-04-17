@@ -16,9 +16,13 @@ import dayjs from "dayjs";
 import { apiService, commonService } from "../../../../services";
 
 const convertSecondsToHHMM = (seconds) => {
+  if (!seconds || seconds <= 0) return "0s";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  return `${h}h ${m}m`;
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 };
 
 const DailyUpdatesTab = () => {

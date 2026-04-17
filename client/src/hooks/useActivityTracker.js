@@ -1,9 +1,9 @@
 import { useEffect, useRef, useCallback } from "react";
 import { apiService, commonService } from "../services";
 
-const HEARTBEAT_INTERVAL_MS = 30000; // Send heartbeat every 30s
-const THROTTLE_MS = 2000;            // Throttle activity events to every 2s
-const INACTIVITY_THRESHOLD_MS = 30000; // 30s of no input = inactive (detected on 2nd heartbeat ~60s)
+const HEARTBEAT_INTERVAL_MS = 30000;   // Send heartbeat every 30s
+const THROTTLE_MS = 2000;              // Throttle activity events to every 2s
+const INACTIVITY_THRESHOLD_MS = 120000; // 2 minutes of no keyboard/mouse = inactive
 
 const useActivityTracker = (activeTracking) => {
   const lastActivityTimeRef = useRef(Date.now());
@@ -29,8 +29,8 @@ const useActivityTracker = (activeTracking) => {
     const timeSinceActivity = now - lastActivityTimeRef.current;
     const timeSinceLastHeartbeat = now - lastHeartbeatTimeRef.current;
 
-    // Active ONLY if there was real mouse/keyboard/scroll activity within threshold
-    // Tab visibility doesn't matter — user can be in VS Code and come back
+    // Active = keyboard/mouse used within last 2 minutes.
+    // Tab visibility does NOT affect active status — user can work in another window.
     const isActive = timeSinceActivity < INACTIVITY_THRESHOLD_MS;
 
     activityStatusRef.current = isActive;
@@ -42,8 +42,7 @@ const useActivityTracker = (activeTracking) => {
         task_id: activeTracking.task_id,
         is_active: isActive,
         last_activity_time: new Date(lastActivityTimeRef.current).toISOString(),
-        is_tab_visible: isTabVisibleRef.current,
-        // Send actual elapsed ms since last heartbeat so backend can calculate accurate delta
+        is_tab_visible: isTabVisibleRef.current, // metadata only, does not affect activity
         ms_since_last_heartbeat: timeSinceLastHeartbeat,
       };
 
@@ -56,16 +55,9 @@ const useActivityTracker = (activeTracking) => {
   }, [activeTracking]);
 
   const handleVisibilityChange = useCallback(() => {
-    const wasHidden = !isTabVisibleRef.current;
+    // Only update the ref for metadata — tab visibility does NOT pause or affect heartbeats.
     isTabVisibleRef.current = document.visibilityState === "visible";
-
-    // When tab becomes visible again, send an immediate heartbeat
-    // to flush any inactive time that accumulated while tab was throttled
-    // Do NOT reset lastActivityTime — only real input events should do that
-    if (isTabVisibleRef.current && wasHidden) {
-      sendHeartbeat();
-    }
-  }, [sendHeartbeat]);
+  }, []);
 
   useEffect(() => {
     if (!activeTracking || activeTracking.end_time) {

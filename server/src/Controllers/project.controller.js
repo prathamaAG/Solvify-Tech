@@ -450,18 +450,21 @@ exports.getProjectsData = async (req, res) => {
                     };
                 }
 
-                // Task where clause: admins see all, users see only their assigned tasks
-                const taskWhere = { card_id: { [Op.in]: cardIds } };
-                if (user.role !== "admin") {
-                    taskWhere.assign_to = user.user_id;
-                }
+                // Task where clause varies by role:
+                // Admin: count ALL tasks in the project (any non-completed = project is active)
+                // Non-admin: count only tasks assigned specifically to this user
+                const baseWhere = { card_id: { [Op.in]: cardIds } };
+                const taskWhere = user.role !== "admin"
+                    ? { ...baseWhere, assign_to: user.user_id }
+                    : baseWhere;
 
                 const totalTasks = await Task.count({ where: taskWhere });
                 const completedTasks = await Task.count({ where: { ...taskWhere, status: "Completed" } });
+                // A project is "active" if any of the user's tasks are Pending or In progress
                 const activeTasks = await Task.count({
                     where: {
                         ...taskWhere,
-                        status: { [Op.notIn]: ["Completed"] },
+                        status: { [Op.in]: ["Pending", "In progress"] },
                     },
                 });
 
