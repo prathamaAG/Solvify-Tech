@@ -450,26 +450,22 @@ exports.getProjectsData = async (req, res) => {
                     };
                 }
 
-                // Task where clause varies by role:
-                // Admin: count ALL tasks in the project (any non-completed = project is active)
-                // Non-admin: count only tasks assigned specifically to this user
-                const baseWhere = { card_id: { [Op.in]: cardIds } };
-                const taskWhere = user.role !== "admin"
-                    ? { ...baseWhere, assign_to: user.user_id }
-                    : baseWhere;
+                // All users (including admin) see only projects where tasks are assigned to them.
+                // Admin seeing all tasks would inflate the count — they want to see their OWN workload.
+                const taskWhere = {
+                    card_id: { [Op.in]: cardIds },
+                    assign_to: user.user_id,
+                };
 
                 const totalTasks = await Task.count({ where: taskWhere });
                 const completedTasks = await Task.count({ where: { ...taskWhere, status: "Completed" } });
-                // A project is "active" if any tasks are Pending, In Progress, or To be verified
+                // A project is "active" if this user has tasks that are Pending, In progress, or To be verified
                 const activeTasks = await Task.count({
                     where: {
                         ...taskWhere,
                         status: { [Op.in]: ["Pending", "In progress", "To be verified"] },
                     },
                 });
-
-                console.log(`[Dashboard] project=${project.project_name} user=${user.user_id} role=${user.role} total=${totalTasks} active=${activeTasks} completed=${completedTasks}`);
-
 
                 const completion = totalTasks > 0
                     ? Math.round((completedTasks / totalTasks) * 100)
@@ -489,10 +485,8 @@ exports.getProjectsData = async (req, res) => {
 
         // Total = projects this user belongs to (not org-wide)
         const totalProjectsCount = projects.length;
-        // Active = projects where this user has at least 1 non-completed task
+        // Active = projects where this user has at least 1 non-completed assigned task
         const activeProjectsCount = projectData.filter(p => p.has_active_tasks).length;
-
-        console.log(`[Dashboard] user=${user.user_id} role=${user.role} total=${totalProjectsCount} active=${activeProjectsCount}`);
 
         res.status(200).json({ data: projectData, totalProjectsCount, activeProjectsCount });
     } catch (error) {
