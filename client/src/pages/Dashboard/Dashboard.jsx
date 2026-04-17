@@ -50,8 +50,10 @@ const Dashboard = () => {
 
         if (projectsResponse?.data && employeesResponse?.data) {
           const totalProjects = projectsResponse.totalProjectsCount ?? projectsResponse.data.length;
-          // activeProjectsCount is pre-computed by the backend (projects with non-completed tasks for this user)
-          const activeProjects = projectsResponse.activeProjectsCount ?? 0;
+          // Prefer backend-computed value; fall back to counting from projectData entries
+          const activeProjects = (projectsResponse.activeProjectsCount != null && projectsResponse.activeProjectsCount > 0)
+            ? projectsResponse.activeProjectsCount
+            : projectsResponse.data.filter(p => p.has_active_tasks).length;
           const totalEmployees = employeesResponse.data.reduce((sum, item) => sum + item.value, 0);
 
           setStats({

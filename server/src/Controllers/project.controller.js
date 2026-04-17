@@ -460,13 +460,16 @@ exports.getProjectsData = async (req, res) => {
 
                 const totalTasks = await Task.count({ where: taskWhere });
                 const completedTasks = await Task.count({ where: { ...taskWhere, status: "Completed" } });
-                // A project is "active" if any of the user's tasks are Pending or In progress
+                // A project is "active" if any tasks are Pending, In Progress, or To be verified
                 const activeTasks = await Task.count({
                     where: {
                         ...taskWhere,
-                        status: { [Op.in]: ["Pending", "In progress"] },
+                        status: { [Op.in]: ["Pending", "In progress", "To be verified"] },
                     },
                 });
+
+                console.log(`[Dashboard] project=${project.project_name} user=${user.user_id} role=${user.role} total=${totalTasks} active=${activeTasks} completed=${completedTasks}`);
+
 
                 const completion = totalTasks > 0
                     ? Math.round((completedTasks / totalTasks) * 100)
@@ -488,6 +491,8 @@ exports.getProjectsData = async (req, res) => {
         const totalProjectsCount = projects.length;
         // Active = projects where this user has at least 1 non-completed task
         const activeProjectsCount = projectData.filter(p => p.has_active_tasks).length;
+
+        console.log(`[Dashboard] user=${user.user_id} role=${user.role} total=${totalProjectsCount} active=${activeProjectsCount}`);
 
         res.status(200).json({ data: projectData, totalProjectsCount, activeProjectsCount });
     } catch (error) {
