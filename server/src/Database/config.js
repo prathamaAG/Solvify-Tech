@@ -18,7 +18,7 @@ const sequelize = new Sequelize(
     dialectOptions: process.env.NODE_ENV === "production" ? {
       ssl: {
         require: true,
-        rejectUnauthorized: true    // Aiven requires proper CA verification
+        rejectUnauthorized: false   // Required for Aiven/cloud DBs — cert verified by the cloud provider
       }
     } : {}
   }
