@@ -14,11 +14,11 @@ const sequelize = new Sequelize(
     dialect: process.env.DB_DIALECT || "mysql",
     port: process.env.DB_PORT || 3306,
     logging: false,
-    pool: { max: 5, min: 0 },
+    pool: { max: 5, min: 0, acquire: 30000, idle: 10000 },
     dialectOptions: process.env.NODE_ENV === "production" ? {
       ssl: {
         require: true,
-        rejectUnauthorized: false
+        rejectUnauthorized: true    // Aiven requires proper CA verification
       }
     } : {}
   }

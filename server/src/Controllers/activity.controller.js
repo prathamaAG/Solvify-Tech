@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 const dayjs = require("dayjs");
 
-const INACTIVITY_THRESHOLD = 120; 
+const INACTIVITY_THRESHOLD = 120;
 exports.receiveHeartbeat = async (req, res) => {
    const { tracking_id, task_id, is_active, last_activity_time, is_tab_visible, ms_since_last_heartbeat } = req.body;
 
